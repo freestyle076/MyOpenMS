@@ -1,0 +1,173 @@
+// --------------------------------------------------------------------------
+//                   OpenMS -- Open-Source Mass Spectrometry               
+// --------------------------------------------------------------------------
+// Copyright The OpenMS Team -- Eberhard Karls University Tuebingen,
+// ETH Zurich, and Freie Universitaet Berlin 2002-2016.
+// 
+// This software is released under a three-clause BSD license:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of any author or any participating institution 
+//    may be used to endorse or promote products derived from this software 
+//    without specific prior written permission.
+// For a full list of authors, refer to the file AUTHORS. 
+// --------------------------------------------------------------------------
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING 
+// INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+// OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+// ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+// --------------------------------------------------------------------------
+// $Maintainer: Chris Bielow $
+// $Authors: Chris Bielow $
+// --------------------------------------------------------------------------
+
+#include <OpenMS/CONCEPT/ClassTest.h>
+#include <OpenMS/test_config.h>
+
+///////////////////////////
+#include <OpenMS/FILTERING/CALIBRATION/InternalCalibration.h>
+///////////////////////////
+
+#include <OpenMS/FORMAT/MzMLFile.h>
+#include <OpenMS/FORMAT/FeatureXMLFile.h>
+#include <OpenMS/FORMAT/IdXMLFile.h>
+#include <OpenMS/MATH/MISC/MathFunctions.h>
+
+using namespace OpenMS;
+using namespace std;
+
+START_TEST(InternalCalibration, "$Id$")
+
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
+InternalCalibration* ptr = 0;
+InternalCalibration* nullPointer = 0;
+START_SECTION(InternalCalibration())
+{
+	ptr = new InternalCalibration();
+	TEST_NOT_EQUAL(ptr, nullPointer)
+}
+END_SECTION
+
+START_SECTION(~InternalCalibration())
+{
+	delete ptr;
+}
+END_SECTION
+
+
+START_SECTION(Size fillCalibrants(const MSExperiment<> exp, const std::vector<InternalCalibration::LockMass>& ref_masses, double tol_ppm, bool lock_require_mono, bool lock_require_iso, CalibrationData& failed_lock_masses, bool verbose = true))
+  MSExperiment<> exp;
+  MzMLFile().load(OPENMS_GET_TEST_DATA_PATH("InternalCalibration_2_lockmass.mzML.gz"), exp);
+  std::vector<InternalCalibration::LockMass> ref_masses;
+  
+  ref_masses.push_back(InternalCalibration::LockMass(327.25353, 1, 1));
+  ref_masses.push_back(InternalCalibration::LockMass(362.29065, 1, 1));
+  ref_masses.push_back(InternalCalibration::LockMass(680.48022, 1, 1));
+
+  InternalCalibration ic;
+  CalibrationData failed_locks;
+  Size cal_count = ic.fillCalibrants(exp, ref_masses, 25.0, true, false, failed_locks, true); // no 'require_iso', since the example data has really high C13 mass error (up to 7ppm to +1 iso)
+
+  TEST_EQUAL(cal_count, 21 * 3); // 21 MS1 scans, 3 calibrants each
+
+END_SECTION
+
+std::vector<PeptideIdentification> peps;
+std::vector<ProteinIdentification> prots;
+IdXMLFile().load(File::find("./examples/BSA/BSA1_OMSSA.idXML"), prots, peps);
+
+START_SECTION(Size fillCalibrants(const FeatureMap& fm, double tol_ppm))
+  FeatureMap fm;
+  fm.setUnassignedPeptideIdentifications(peps);
+
+  InternalCalibration ic;
+  Size cal_count = ic.fillCalibrants(fm, 100.0);
+  TEST_EQUAL(cal_count, 44); // all pep IDs
+
+  cal_count = ic.fillCalibrants(fm, 10.0);
+  TEST_EQUAL(cal_count, 37);  // a few outliers IDs removed
+
+END_SECTION
+
+START_SECTION(Size fillCalibrants(const std::vector<PeptideIdentification>& pep_ids, double tol_ppm))
+  InternalCalibration ic;
+  Size cal_count = ic.fillCalibrants(peps, 100.0);
+  TEST_EQUAL(cal_count, 44);
+
+  cal_count = ic.fillCalibrants(peps, 10.0);
+  TEST_EQUAL(cal_count, 37);
+
+  TEST_EQUAL(ic.getCalibrationPoints().size(), cal_count)
+
+END_SECTION
+
+START_SECTION(const CalibrationData& getCalibrationPoints() const)
+  NOT_TESTABLE // tested above
+END_SECTION
+
+START_SECTION(bool calibrate(MSExperiment<>& exp, const IntList& target_mslvl, MZTrafoModel::MODELTYPE model_type, double rt_chunk, bool use_RANSAC, double post_ppm_median, double post_ppm_MAD, const String& file_models, const String& file_residuals))
+  InternalCalibration ic;
+  ic.fillCalibrants(peps, 3.0);
+  MSExperiment<> exp;
+  MzMLFile().load(File::find("./examples/BSA/BSA1.mzML"), exp);
+  MZTrafoModel::setRANSACParams(Math::RANSACParam(2, 1000, 1.0, 30, true));
+  bool success = ic.calibrate(exp, std::vector<Int>(1, 1), MZTrafoModel::LINEAR, -1, true, 1.0, 1.0);
+  TEST_EQUAL(success, true)
+END_SECTION
+
+MSExperiment<>::SpectrumType spec;
+spec.push_back(Peak1D(250.0, 1000.0));
+spec.push_back(Peak1D(500.0, 1000.0));
+spec.push_back(Peak1D(750.0, 1000.0));
+spec.push_back(Peak1D(1000.0, 1000.0));
+
+START_SECTION(static void applyTransformation(MSExperiment<>::SpectrumType& spec, const MZTrafoModel& trafo))
+  MZTrafoModel trafo;
+  trafo.setCoefficients(-100.0, 0.0, 0.0);
+  MSExperiment<>::SpectrumType spec2 = spec;
+  TEST_EQUAL(spec, spec2);
+  InternalCalibration::applyTransformation(spec, trafo);
+  TEST_NOT_EQUAL(spec, spec2);
+  TEST_REAL_SIMILAR(spec2[0].getMZ(), spec[0].getMZ() + Math::ppmToMass(-100.0, 250.0));
+  TEST_REAL_SIMILAR(spec2[1].getMZ(), spec[1].getMZ() + Math::ppmToMass(-100.0, 500.0));
+END_SECTION
+
+START_SECTION(static void applyTransformation(MSExperiment<>& exp, const IntList& target_mslvl, const MZTrafoModel& trafo))
+  MZTrafoModel trafo;
+  trafo.setCoefficients(-100.0, 0.0, 0.0); // observed m/z are 100ppm lower than reference
+  MSExperiment<>::SpectrumType spec2 = spec;
+  spec2.setMSLevel(2);      // will not be calibrated
+  MSExperiment<> exp;
+  exp.addSpectrum(spec);
+  exp.addSpectrum(spec2);
+  exp.addSpectrum(spec);
+  
+  InternalCalibration::applyTransformation(exp, std::vector<Int>(1, 1), trafo);
+  TEST_NOT_EQUAL(exp[0], spec);
+  TEST_EQUAL(exp[1], spec2);
+  TEST_NOT_EQUAL(exp[2], spec);
+  TEST_REAL_SIMILAR(exp[0][0].getMZ(), spec[0].getMZ() + Math::ppmToMass(-1 * -100.0, 250.0));
+  TEST_REAL_SIMILAR(exp[0][1].getMZ(), spec[1].getMZ() + Math::ppmToMass(-1 *-100.0, 500.0));
+  TEST_REAL_SIMILAR(exp[2][0].getMZ(), spec[0].getMZ() + Math::ppmToMass(-1 *-100.0, 250.0));
+  TEST_REAL_SIMILAR(exp[2][1].getMZ(), spec[1].getMZ() + Math::ppmToMass(-1 *-100.0, 500.0));
+END_SECTION
+
+
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+END_TEST
+
+

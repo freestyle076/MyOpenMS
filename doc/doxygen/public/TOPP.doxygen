@@ -1,0 +1,163 @@
+// --------------------------------------------------------------------------
+//                   OpenMS -- Open-Source Mass Spectrometry
+// --------------------------------------------------------------------------
+// Copyright The OpenMS Team -- Eberhard Karls University Tuebingen,
+// ETH Zurich, and Freie Universitaet Berlin 2002-2016.
+//
+// This software is released under a three-clause BSD license:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of any author or any participating institution
+//    may be used to endorse or promote products derived from this software
+//    without specific prior written permission.
+// For a full list of authors, refer to the file AUTHORS.
+// --------------------------------------------------------------------------
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING
+// INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+// OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+// ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// --------------------------------------------------------------------------
+// $Maintainer:  $
+// $Authors: Marc Sturm $
+// --------------------------------------------------------------------------
+
+/**
+  @page TOPP_documentation TOPP documentation
+
+  'TOPP - The %OpenMS Proteomics Pipeline' is a pipeline for the analysis of HPLC-MS data. It consists of several small applications that
+  can be chained to create analysis pipelines tailored for a specific problem.
+
+  <BR>
+
+ 	The TOPP tools are divided into several subgroups:
+
+  <b>Graphical Tools</b>
+  - @subpage TOPP_TOPPView - A viewer for mass spectrometry data.
+  - @subpage TOPP_TOPPAS - An assistant for GUI-driven TOPP workflow design.
+  - @subpage TOPP_INIFileEditor - An editor for %OpenMS configuration files.
+
+  <b>File Handling</b>
+  - @subpage TOPP_DTAExtractor - Extracts spectra of an MS run file to several files in DTA format.
+  - @subpage TOPP_FileConverter - Converts between different MS file formats.
+  - @subpage TOPP_FileFilter - Extracts or manipulates portions of data from peak, feature or consensus feature files.
+  - @subpage TOPP_FileInfo - Shows basic information about the file, such as data ranges and file type.
+  - @subpage TOPP_FileMerger - Merges several MS files into one file.
+  - @subpage TOPP_IDMerger -  Merges several protein/peptide identification files into one file.
+  - @subpage TOPP_IDRipper - Splits protein/peptide identifications according their file-origin.
+  - @subpage TOPP_IDFileConverter - Converts identification engine file formats.
+  - @subpage TOPP_MapStatistics - Extract extended statistics on the features of a map for quality control.
+  - @subpage TOPP_TextExporter - Exports various XML formats to a text file.
+  - @subpage TOPP_MzTabExporter - Exports various XML formats to an mzTab file
+
+  <b>Signal Processing and Preprocessing</b>
+  - @subpage TOPP_BaselineFilter - Removes the baseline from profile spectra using a top-hat filter.
+  - @subpage TOPP_InternalCalibration - Applies an internal mass calibration.
+  - @subpage TOPP_ExternalCalibration - Applies an external mass calibration.
+  - @subpage TOPP_MapNormalizer - Normalizes peak intensities in an MS run.
+  - @subpage TOPP_MassTraceExtractor - Annotates mass traces in centroided LC-MS maps.
+  - @subpage TOPP_NoiseFilterGaussian - Removes noise from profile spectra by using different smoothing techniques.
+  - @subpage TOPP_NoiseFilterSGolay - Removes noise from profile spectra by using different smoothing techniques.
+  - @subpage TOPP_PeakPickerHiRes - Finds mass spectrometric peaks in profile mass spectra.
+  - @subpage TOPP_PeakPickerWavelet - Finds mass spectrometric peaks in profile mass spectra.
+  - @subpage TOPP_PrecursorMassCorrector - Correct the precursor entries of tandem MS scans.
+  - @subpage TOPP_HighResPrecursorMassCorrector - Correct the precursor entries of tandem MS scans for high resolution data.
+  - @subpage TOPP_Resampler - Transforms an LC-MS map into an equally-spaced (in RT and m/z) map.
+  - @subpage TOPP_SpectraFilterBernNorm - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterMarkerMower - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterNLargest - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterNormalizer - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterParentPeakMower - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterScaler - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterSqrtMower - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterThresholdMower - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraFilterWindowMower - Applies a filter to peak spectra.
+  - @subpage TOPP_SpectraMerger - Merges spectra from an LC-MS map, either by precursor or by RT blocks
+  - @subpage TOPP_TOFCalibration - Applies time of flight mass calibration.
+
+  <b>Quantitation</b>
+  - @subpage TOPP_AdditiveSeries - Computes an additive series to quantify a peptide in a set of samples.
+  - @subpage TOPP_Decharger - Decharges and merges different feature charge variants of the same chemical entity.
+  - @subpage TOPP_EICExtractor - Quantifies signals at given positions in (raw or picked) LC-MS maps.
+  - @subpage TOPP_FeatureFinderCentroided - Detects two-dimensional features in centroided LC-MS data.
+  - @subpage TOPP_FeatureFinderIdentification - Detects two-dimensional features in MS1 data based on peptide identifications.
+  - @subpage TOPP_FeatureFinderIsotopeWavelet - Detects two-dimensional features in uncentroided (=raw) LC-MS data.
+  - @subpage TOPP_FeatureFinderMetabo - Detects two-dimensional features in centroided LC-MS data of metabolites.
+  - @subpage TOPP_FeatureFinderMRM - Quantifies features LC-MS/MS MRM data.
+  - @subpage TOPP_FeatureFinderMultiplex - Identifies peptide multiplets (pairs, triplets etc.) and determines their relative abundance.
+  - @subpage TOPP_IsobaricAnalyzer - Extracts and normalizes TMT and iTRAQ information from a MS experiment.
+  - @subpage TOPP_ITRAQAnalyzer - Extracts and normalizes iTRAQ information from an MS experiment.
+  - @subpage TOPP_MultiplexResolver - Resolves conflicts between identifications and quantifications in multiplex data.
+  - @subpage TOPP_ProteinQuantifier - Computes protein abundances from annotated feature/consensus maps
+  - @subpage TOPP_ProteinResolver - A peptide-centric algorithm for protein inference.
+  - @subpage TOPP_SeedListGenerator - Generates seed lists for feature detection.
+  - @subpage TOPP_TMTAnalyzer - Extracts and normalizes TMT information from an MS experiment.
+
+  <b>Map Alignment</b>
+  - @subpage TOPP_ConsensusMapNormalizer - Normalizes maps of one consensusXML file (after linking).
+  - @subpage TOPP_MapAlignerIdentification - Corrects retention time distortions between maps based on common peptide identifications.
+  - @subpage TOPP_MapAlignerPoseClustering - Corrects retention time distortions between maps using a pose clustering approach.
+  - @subpage TOPP_MapAlignerSpectrum - Corrects retention time distortions between maps by spectrum alignment.
+  - @subpage TOPP_MapRTTransformer - Applies retention time transformations to maps.
+  - @subpage TOPP_FeatureLinkerLabeled - Groups corresponding isotope-labeled features in a feature map.
+  - @subpage TOPP_FeatureLinkerUnlabeled - Groups corresponding features from multiple maps.
+  - @subpage TOPP_FeatureLinkerUnlabeledQT - Groups corresponding features from multiple maps using a QT clustering approach.
+
+  <b>Protein/Peptide Identification</b>
+  - @subpage TOPP_CompNovo - Performs a peptide/protein identification with the CompNovo engine.
+  - @subpage TOPP_CompNovoCID - Performs a peptide/protein identification with the CompNovo engine in CID mode.
+  - @subpage TOPP_InspectAdapter - Identifies MS/MS spectra using Inspect (external).
+  - @subpage TOPP_MascotAdapter - Identifies MS/MS spectra using Mascot (external).
+  - @subpage TOPP_MascotAdapterOnline - Identifies MS/MS spectra using Mascot (external).
+  - @subpage TOPP_MSGFPlusAdapter - Identifies MS/MS spectra using MSGFPlus (external).
+  - @subpage TOPP_MyriMatchAdapter - Identifies MS/MS spectra using MyriMatch (external).
+  - @subpage TOPP_OMSSAAdapter - Identifies MS/MS spectra using OMSSA (external).
+  - @subpage TOPP_PepNovoAdapter - Identifies MS/MS spectra using PepNovo (external).
+  - @subpage TOPP_XTandemAdapter - Identifies MS/MS spectra using XTandem (external).
+  - @subpage TOPP_SpecLibSearcher - Identifies peptide MS/MS spectra by spectral matching with a searchable spectral library.
+
+  <b>Protein/Peptide Processing</b>
+  - @subpage TOPP_ConsensusID - Computes a consensus identification from peptide identifications of several identification engines.
+  - @subpage TOPP_FalseDiscoveryRate - Estimates the false discovery rate on peptide and protein level using decoy searches.
+  - @subpage TOPP_FidoAdapter - Runs the protein inference engine Fido.
+  - @subpage TOPP_IDConflictResolver - Resolves ambiguous annotations of features with peptide identifications.
+  - @subpage TOPP_IDFilter - Filters results from protein or peptide identification engines based on different criteria.
+  - @subpage TOPP_IDMapper - Assigns protein/peptide identifications to feature or consensus features.
+  - @subpage TOPP_IDPosteriorErrorProbability - Estimates posterior error probabilities using a mixture model.
+  - @subpage TOPP_IDRTCalibration - Can be used to calibrate RTs of peptide hits linearly to standards.
+  - @subpage TOPP_LuciphorAdapter - Scores potential phosphorylation sites in order to localize the most probable sites.
+  - @subpage TOPP_PeptideIndexer - Refreshes the protein references for all peptide hits.
+  - @subpage TOPP_PhosphoScoring - Scores potential phosphorylation sites in order to localize the most probable sites.
+  - @subpage TOPP_ProteinInference - Infer proteins from a list of (high-confidence) peptides.
+
+  <b>Targeted Experiments</b>
+  - @subpage TOPP_InclusionExclusionListCreator - Creates inclusion and/or exclusion lists for LC-MS/MS experiments.
+  - @subpage TOPP_PrecursorIonSelector - A tool for precursor ion selection based on identification results.
+  - @subpage TOPP_MRMMapper - MRMMapper maps measured chromatograms (mzML) and the transitions used (TraML)
+  - @subpage TOPP_OpenSwathDecoyGenerator - Generates decoys according to different models for a specific TraML
+  - @subpage TOPP_OpenSwathChromatogramExtractor - Extract chromatograms (XIC) from a MS2 map file.
+  - @subpage TOPP_OpenSwathAnalyzer - Picks peaks and finds features in an SRM experiment.
+  - @subpage TOPP_OpenSwathRTNormalizer - This tool will align an SRM / SWATH run to a normalized retention time space.
+  - @subpage TOPP_OpenSwathFeatureXMLToTSV - Converts a featureXML to a tsv.
+  - @subpage TOPP_OpenSwathConfidenceScoring - Computes confidence scores for OpenSwath results.
+
+  <b>Peptide Property Prediction</b>
+  - @subpage TOPP_PTModel - Trains a model for the prediction of proteotypic peptides from a training set.
+  - @subpage TOPP_PTPredict - Predicts the likelihood of peptides to be proteotypic using a model trained by PTModel.
+  - @subpage TOPP_RTModel - Trains a model for the retention time prediction of peptides from a training set.
+  - @subpage TOPP_RTPredict - Predicts retention times for peptides using a model trained by RTModel.
+
+  <b>Misc</b>
+  - @subpage TOPP_GenericWrapper - Allows the generic wrapping of external tools.
+  - @subpage TOPP_ExecutePipeline - Executes workflows created by TOPPAS.
+*/

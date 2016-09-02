@@ -1,0 +1,5 @@
+# Protein abundances computed from file 'ProteinQuantifier_input.consensusXML'
+# Parameters (relevant only): top=3, average=sum
+# Files/samples associated with abundance values below: 1: 'sample1.featureXML', 2: 'sample2.featureXML', 3: 'sample3.featureXML'
+"protein"	"n_proteins"	"protein_score"	"n_peptides"	"abundance_1"	"abundance_2"	"abundance_3"
+"Protein"	1	0	4	1230	234	0
