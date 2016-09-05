@@ -361,7 +361,7 @@ namespace OpenMS
         //iterate over all peaks of the scan
         for (Size p = 0; p < spectrum.size(); ++p)
         {
-          //** scores for **
+          //** scores for peaks along same m/z**
           std::vector<double> scores;
           scores.reserve(2 * min_spectra_);
 
@@ -501,11 +501,12 @@ namespace OpenMS
     //-------------------------------------------------------------------------
     Int plot_nr_global = -1; //counter for the number of plots (debug info)
     Int feature_nr_global = 0; //counter for the number of features (debug info)
+    //** iterate through charge states **
     for (SignedSize c = charge_low; c <= charge_high; ++c)
     {
       UInt meta_index_isotope = 3 + c - charge_low;
       UInt meta_index_overall = 3 + charge_count + c - charge_low;
-
+      
       Size feature_candidates = 0;
       std::vector<Seed> seeds;
 
@@ -513,35 +514,56 @@ namespace OpenMS
       //Step 3.1: Precalculate IsotopePattern score
       //-----------------------------------------------------------
       ff_->startProgress(0, map_.size(), String("Calculating isotope pattern scores for charge ") + String(c));
+      
+      //** iterate through every spectrum **
       for (Size s = 0; s < map_.size(); ++s)
       {
         ff_->setProgress(s);
         const SpectrumType& spectrum = map_[s];
+        
+        //** iterate through peaks in spectrum **
         for (Size p = 0; p < spectrum.size(); ++p)
         {
           double mz = spectrum[p].getMZ();
 
           //get isotope distribution for this mass
+          
+          //** expected envelope for current mz and current charge state if exists**
           const TheoreticalIsotopePattern& isotopes = getIsotopeDistribution_(mz * c);
+          
           //determine highest peak in isotope distribution
+          //** relative m/z position of isotope with highest intensities **
           Size max_isotope = std::max_element(isotopes.intensity.begin(), isotopes.intensity.end()) - isotopes.intensity.begin();
+          
           //Look up expected isotopic peaks (in the current spectrum or adjacent spectra)
           Size peak_index = spectrum.findNearest(mz - ((double)(isotopes.size() + 1) / c));
+          
+          //** resulting envelope after searching nearby m/z positions **
           IsotopePattern pattern(isotopes.size());
 
+          //** iterate through the theoretical isotopes **
           for (Size i = 0; i < isotopes.size(); ++i)
           {
+            //** theoretical isotope m/z position **
             double isotope_pos = mz + ((double)i - max_isotope) / c;
+            
+            //** this function must have a side-effect that modifies pattern, since no output **
+            //** s is spectrum index, isotop_pos is m/z position of expected isotope, **
+            //** pattern is modified parameter (side-effect), i is relative isotope position, **
+            //** peak_index is peak in spectrum **
             findIsotope_(isotope_pos, s, pattern, i, peak_index);
           }
 
+          //** score the likeness of theoretical and actual isotopic pattern **
           double pattern_score = isotopeScore_(isotopes, pattern, true);
 
           //update pattern scores of all contained peaks (if necessary)
           if (pattern_score > 0.0)
           {
+             
             for (Size i = 0; i < pattern.peak.size(); ++i)
             {
+              // ** update pattern score if better **
               if (pattern.peak[i] >= 0 && pattern_score > map_[pattern.spectrum[i]].getFloatDataArrays()[meta_index_isotope][pattern.peak[i]])
               {
                 map_[pattern.spectrum[i]].getFloatDataArrays()[meta_index_isotope][pattern.peak[i]] = pattern_score;
@@ -567,7 +589,11 @@ namespace OpenMS
         //iterate over peaks
         for (Size p = 0; p < map_[s].size(); ++p)
         {
+
+          //** silly time to make this call -> re-resolve anyone? **
           FloatDataArrays& meta = map_[s].getFloatDataArrays();
+
+          //** overall score = geometric mean of trace, intensity and pattern score **
           double overall_score = std::pow(meta[0][p] * meta[1][p] * meta[meta_index_isotope][p], 1.0f / 3.0f);
           meta[meta_index_overall][p] = overall_score;
 
@@ -657,6 +683,8 @@ namespace OpenMS
       FeatureMapType tmp_feature_map;
       int gl_progress = 0;
       ff_->startProgress(0, seeds.size(), String("Extending seeds for charge ") + String(c));
+
+      //** Iterate through all seeds (nice OMP FOR!) **
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -667,9 +695,11 @@ namespace OpenMS
         //Extend all mass traces
         //------------------------------------------------------------------
 
+        //** Seed's RT and mz values **
         const SpectrumType& spectrum = map_[seeds[i].spectrum];
         const PeakType& peak = spectrum[seeds[i].peak];
 
+        //** IGNORE **
         IF_MASTERTHREAD
         {
           ff_->setProgress(gl_progress++);
@@ -687,6 +717,9 @@ namespace OpenMS
         //----------------------------------------------------------------
         //Find best fitting isotope pattern for this charge (using averagine)
         IsotopePattern best_pattern(0);
+
+        //** side-effect parameter best_pattern, returns metric on fit **
+        //** but what does it do??? **
         double isotope_fit_quality = findBestIsotopeFit_(seeds[i], c, best_pattern);
 
         if (isotope_fit_quality < min_isotope_fit_)
@@ -1168,6 +1201,7 @@ namespace OpenMS
   const FeatureFinderAlgorithmPickedHelperStructs::TheoreticalIsotopePattern& FeatureFinderAlgorithmPicked::getIsotopeDistribution_(double mass) const
   {
     //calculate index in the vector
+    //defGetIsotopeDistribution_
     Size index = (Size) std::floor(mass / mass_window_width_);
 
     if (index >= isotope_distributions_.size())
@@ -1181,6 +1215,7 @@ namespace OpenMS
 
   double FeatureFinderAlgorithmPicked::findBestIsotopeFit_(const Seed& center, UInt charge, IsotopePattern& best_pattern) const
   {
+    //deffindBestIsotopeFit_
     if (debug_) log_ << "Testing isotope patterns for charge " << charge << ": " << std::endl;
     const SpectrumType& spectrum = map_[center.spectrum];
     const TheoreticalIsotopePattern& isotopes = getIsotopeDistribution_(spectrum[center.peak].getMZ() * charge);
@@ -1509,6 +1544,7 @@ namespace OpenMS
 
   void FeatureFinderAlgorithmPicked::findIsotope_(double pos, Size spectrum_index, IsotopePattern& pattern, Size pattern_index, Size& peak_index) const
   {
+    //deffindIsotope_
     if (debug_) log_ << "   - Isotope " << pattern_index << ": ";
 
     double intensity = 0.0;
@@ -1699,6 +1735,8 @@ namespace OpenMS
   double FeatureFinderAlgorithmPicked::intensityScore_(Size spectrum, Size peak) const
   {
     // calculate (half) bin numbers
+
+    //defintensityScore_
     
     //** peak's attributes **
     double intensity  = map_[spectrum][peak].getIntensity();
@@ -1794,6 +1832,8 @@ namespace OpenMS
 
   double FeatureFinderAlgorithmPicked::intensityScore_(Size rt_bin, Size mz_bin, double intensity) const
   {
+
+    //defintensityScore_
     // interpolate score value according to quantiles(20)
     const std::vector<double>& quantiles20 = intensity_thresholds_[rt_bin][mz_bin];
     // get iterator pointing to quantile that is >= intensity
