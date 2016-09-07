@@ -124,6 +124,7 @@ namespace OpenMS
     if (this->size() < 2) return false;
 
     //Abort if the seed was removed
+    //** find a trace that has an average mz close enough to seed's mz
     for (Size j = 0; j < this->size(); ++j)
     {
       if (std::fabs(seed_mz - this->at(j).getAvgMZ()) <= trace_tolerance)
