@@ -971,7 +971,7 @@ namespace OpenMS
           //** current seed's contained seeds, computed when creating this seed's feature **
           std::vector<Size> cur_seeds_contained_seeds = seeds_in_features[seed_nr];
           
-          //** mark each of the current seed's 
+          //** mark each of the current seed's overshadowed seeds **
           for (Size k = 0; k < cur_seeds_contained_seeds.size(); ++k)
           {
             seeds_overshadowed.push_back(cur_seeds_contained_seeds[k]);
@@ -993,10 +993,15 @@ namespace OpenMS
     if (debug_) log_ << "Resolving intersecting features (" << features_->size() << " candidates)" << std::endl;
     //sort features according to m/z in order to speed up the resolution
     features_->sortByMZ();
+    
+    
     //precalculate BBs and maximum mz span
+    
+    //** a bounding box for each feature **
     std::vector<DBoundingBox<2> > bbs(features_->size());
     double max_mz_span = 0.0;
 
+    //** collect bounding boxes, find maximum mz span for any feature **
     for (Size i = 0; i < features_->size(); ++i)
     {
       bbs[i] = (*features_)[i].getConvexHull().getBoundingBox();
@@ -1006,31 +1011,50 @@ namespace OpenMS
       }
     }
 
+    //** counter for number of features removed **
     Size removed(0);
+    
     //intersect
+    //** cross product comparison: for each feature...**
     for (Size i = 0; i < features_->size(); ++i)
     {
+      //** comparison base feature **
       Feature& f1((*features_)[i]);
+      
+      //** ...for each subsequent feature **
       for (Size j = i + 1; j < features_->size(); ++j)
       {
         ff_->setProgress(i * features_->size() + j);
+        
+        //** comparison subordinate feature **
         Feature& f2((*features_)[j]);
+        
         //features that are more than 2 times the maximum m/z span apart do not overlap => abort
+        //** why is this a break and the rest a continue? **
+        //** a break transitions to the next f1 **
         if (f2.getMZ() - f1.getMZ() > 2.0 * max_mz_span) break;
+        
         //do nothing if one of the features is already removed
         if (f1.getIntensity() == 0.0 || f2.getIntensity() == 0.0) continue;
+        
         //do nothing if the overall convex hulls do not overlap
         if (!bbs[i].intersects(bbs[j])) continue;
+        
         //act depending on the intersection
         double intersection = intersection_(f1, f2);
 
+        //** another arbitrary parameter **
         if (intersection >= max_feature_intersection_)
         {
+          //** if made it this far then one of the features will be removed **
           ++removed;
 
           if (debug_) log_ << " - Intersection (" << (i + 1) << "/" << (j + 1) << "): " << intersection << std::endl;
+          
+          //** same charge state... **
           if (f1.getCharge() == f2.getCharge())
           {
+            //** intensity * quality trumps **
             if (f1.getIntensity() * f1.getOverallQuality() > f2.getIntensity() * f2.getOverallQuality())
             {
               if (debug_) log_ << "   - same charge -> removing duplicate " << (j + 1) << std::endl;
@@ -1044,6 +1068,8 @@ namespace OpenMS
               f1.setIntensity(0.0);
             }
           }
+          
+          //** differing charge states, but one is a multiple of the other **
           else if (f2.getCharge() % f1.getCharge() == 0)
           {
             if (debug_) log_ << "   - different charge (one is the multiple of the other) -> removing lower charge " << (i + 1) << std::endl;
@@ -1076,6 +1102,7 @@ namespace OpenMS
     }
     LOG_INFO << "Removed " << removed << " overlapping features." << std::endl;
     //finally remove features with intensity 0
+    //** "removing" in the last step was simply setting a feature's intensity to 0. need to cleanup **
     FeatureMap tmp;
     tmp.reserve(features_->size());
     for (Size i = 0; i < features_->size(); ++i)
@@ -1086,10 +1113,14 @@ namespace OpenMS
       }
     }
     tmp.swapFeaturesOnly(*features_);
+    //** finished cleaning out removed features**
+    
     //sort features by intensity
     features_->sortByIntensity(true);
     ff_->endProgress();
     std::cout << features_->size() << " features left." << std::endl;
+
+    //** wrapup: report aborted features **
 
     //Abort reasons
     std::cout << std::endl;
@@ -1117,6 +1148,7 @@ namespace OpenMS
       abort_map.setUniqueId();
       FeatureXMLFile().store("debug/abort_reasons.featureXML", abort_map);
 
+      //** preserve peak scores **
       //store input map with calculated scores (without overall score)
       for (Size s = 0; s < map_.size(); ++s)
       {
@@ -1167,6 +1199,7 @@ namespace OpenMS
 
   double FeatureFinderAlgorithmPicked::intersection_(const Feature& f1, const Feature& f2) const
   {
+    //defintersection_
     //calculate the RT range sum of feature 1
     double s1 = 0.0;
     const std::vector<ConvexHull2D>& hulls1 = f1.getConvexHulls();
@@ -1184,13 +1217,22 @@ namespace OpenMS
     }
 
     //calculate overlap
+    //** overlap is the amount of RT overlap per trace pair **
     double overlap = 0.0;
+    
+    
+    //** fore each trace's hull in feature 1... **
     for (Size i = 0; i < hulls1.size(); ++i)
     {
+      //** hull for trace in feature 1 **
       DBoundingBox<2> bb1 = hulls1[i].getBoundingBox();
+      
+      //** ...for each trace's hull in feature 2 **
       for (Size j = 0; j < hulls2.size(); ++j)
       {
+        //** hull for trace in feature 2 **
         DBoundingBox<2> bb2 = hulls2[j].getBoundingBox();
+        
         if (bb1.intersects(bb2))
         {
           if (bb1.minPosition()[0] <= bb2.minPosition()[0] &&
