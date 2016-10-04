@@ -119,9 +119,12 @@ namespace OpenMS
     ProcessData * dataProcessor = new ProcessData();
     unsigned int i;
 
+    //** iterate through all spectra **
     for (i = 0; i < datavec.size(); i++)
     {
       Map it = datavec.at(i);
+
+      //** WARNING: They use TR instead of RT **
 
       dataProcessor->setMaxScanDistance(0);
       if ((it.first >= SuperHirnParameters::instance()->getMinTR()) &&
@@ -130,10 +133,12 @@ namespace OpenMS
         SuperHirnParameters::instance()->getScanTRIndex()->insert(std::pair<int, float>(i, (float) it.first));
 
         // centroid it:
+        //** centroid the raw data **
         CentroidData cd(SuperHirnParameters::instance()->getCentroidWindowWidth(), it.second, it.first,
                         SuperHirnParameters::instance()->centroidDataModus());
 
         //  store it:
+        //** store the centroided data with its index and rt/60 values** 
         dataProcessor->add_scan_raw_data(i, it.first, &cd);
 
       }
@@ -192,6 +197,7 @@ namespace OpenMS
   void FTPeakDetectController::process_MS1_level_data_structure(ProcessData * rawData)
   {
 
+    //defprocess_MS1_level_data_structure
     // FLOFLO
     //int mzListSize = rawData->getNbMSTraces();
     //std::cout << "mzListSize: " << mzListSize << "\n";

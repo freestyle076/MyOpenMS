@@ -71,6 +71,7 @@ namespace OpenMS
     std::vector<Feature> thefeatures;
 
     std::vector<SHFeature>::iterator p = controller.getLCMS()->get_feature_list_begin();
+    //** 
     while (p != controller.getLCMS()->get_feature_list_end())
     {
 
