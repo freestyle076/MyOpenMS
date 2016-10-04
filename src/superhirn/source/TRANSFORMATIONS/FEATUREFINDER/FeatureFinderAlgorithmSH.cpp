@@ -174,6 +174,7 @@ namespace OpenMS
     bool orderByNativeIds = false;
 
     // go through map, extract data and store it in a vector of RawData objects
+    //** iterate through all spectra **
     for (unsigned int s = 0; s < map_.size(); s++)
     {
       const SpectrumType& spectrum = map_[s];
@@ -197,6 +198,7 @@ namespace OpenMS
       std::vector<double> vmzvals;
       std::vector<double> vintvals;
 
+      //** iterate through each peak, collect mz's and intensities **
       for (Size p = 0; p < spectrum.size(); ++p)
       {
         vmzvals.push_back(spectrum[p].getMZ());
@@ -204,15 +206,20 @@ namespace OpenMS
       }
 
       //RawData* data = new RawData(vmzvals, vintvals);
+      //** store mz and intensities as RawData vector **
       boost::shared_ptr<RawData> data_ptr(new RawData(vmzvals, vintvals));
 
+      // ** create new map with rt key, mz/intensity data **
       FeatureFinderAlgorithmSHCtrl::MyMap map_ptr(rt / 60, data_ptr);
 //        m[rt/60.0] = data;
       unsigned int scanIndex = scanId - 1;
+
+      //** store map in vector **
       datavec[scanIndex] = map_ptr;
     }
 
     // apply the SuperHirn FeatureFinder algorithm
+    //** the rest of the algorithm is delegated to FeatureFinderAlgorithmSHCtrl
     FeatureFinderAlgorithmSHCtrl ctrl;
     ctrl.initParams(this->param_);
     std::vector<Feature> thefeatures = ctrl.extractPeaks(datavec);

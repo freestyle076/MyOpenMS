@@ -305,6 +305,7 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // inputs raw /centroided  data into the object:
+  //** adds a single scan's 
   void ProcessData::add_scan_raw_data(int SCAN, double TR, CentroidData * centroidedData)
   {
 
@@ -341,15 +342,19 @@ namespace OpenMS
 
     // iterate through the vector:
     vector<MSPeak>::iterator P = PEAK_LIST.begin();
+
+    //** iterate through all MSPeak in scan **
     while (P != PEAK_LIST.end())
     {
 
       MSPeak * PEAK = &(*P);
 
       // check if its above the min. intensity:
+      //** MINIMUM INTENSITY THRESHOLD **
       if (filterDeisotopicMSPeak(PEAK))
       {
 
+        //** insert the peak into main data structure **
         // check if this MZ has already been observed:
         main_iterator LCP = check_MZ_occurence(PEAK);
         if (LCP != get_MZ_LIST_end())
