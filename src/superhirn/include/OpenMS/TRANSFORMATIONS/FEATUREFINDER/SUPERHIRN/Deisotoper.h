@@ -88,6 +88,8 @@ protected:
     std::list<DeconvPeak> fDeconvPeaks;
 
     int     fMinPeakGroupSize;
+    
+    //** f theta appears to be a minimum intensity **
     double  fTheta;
     int     fScanNumber;
     bool    fShortReportFlag;

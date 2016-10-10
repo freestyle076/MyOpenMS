@@ -297,16 +297,27 @@ namespace OpenMS
   void LCElutionPeak::setSNIntensityThreshold()
   {
 
+    //** weighted average of all peaks' signal to noise ratio (intensity weight)**
     fSignalToNoise = 0;
+    
+    //** weighted average of all peaks' signals SNIntensityThreshold **
     fSNIntensityThreshold = 0;
 
     double TotArea = 0;
+    
+    //** iterate through the MSPeaks belong to elution_peak **
     SIGNAL_iterator P = get_signal_list_start();
     while (P != get_signal_list_end())
     {
       MSPeak * peak = &(P->second);
+      
+      //** weighted average numerator **
       fSignalToNoise += peak->getSignalToNoise() * peak->get_intensity();
+      
+      //** weighted average numerator **
       fSNIntensityThreshold += peak->get_intensity() * (peak->get_intensity() / peak->getSignalToNoise());
+      
+      //** sum of weights **
       TotArea += peak->get_intensity();
       P++;
     }
@@ -335,6 +346,7 @@ namespace OpenMS
     fStartTR = (*P).second.get_retention_time();
 
     // set start et first scan in the LC_peak:
+    //** find the first peak that is above the noise threshold **
     while (P != get_signal_list_end())
     {
       if ((*P).second.get_intensity() >= fSNIntensityThreshold)
@@ -359,9 +371,14 @@ namespace OpenMS
     }
 
     // go through all peaks in the LC elution profile:
+    //** iterate through the subsequent peaks calculating the intensity*RT area between all **
+    //** valid peak pairs **
     while (P != get_signal_list_end())
     {
 
+      //** its possible that subsequent peaks are below the threshold **
+      //** if this one passes and there is no start, make it the start **
+      //** if this one passes and there is a start, make it the end **
       if ((*P).second.get_intensity() >= fSNIntensityThreshold)
       {
         if (startPeak != NULL)
@@ -373,12 +390,15 @@ namespace OpenMS
           startPeak = &((*P).second);
         }
       }
+      
+      //** else a peak has dipped below the threshold and we have to start over **
       else
       {
         endPeak = NULL;
         startPeak = NULL;
       }
 
+      //** if we have both a start and a end peak **
       if ((endPeak != NULL) && (startPeak != NULL))
       {
 
@@ -391,8 +411,13 @@ namespace OpenMS
                                          startPeak->get_intensity() - fSNIntensityThreshold, endPeak->get_retention_time(),
                                          endPeak->get_intensity() - fSNIntensityThreshold);
 
+        //** total intensity area **
         TOT_AREA += area;
+        
+        //** weighted average of scan_ix (area weights) **
         apexScan += (double) (P->first) * area;
+        
+        //** weighted average of rt value (area weights) **
         apexTr += startPeak->get_retention_time() * area;
 
         // next scan:
@@ -436,6 +461,7 @@ namespace OpenMS
 
 /////////////////////////////////////////////////////////////////////
 // compute the charge state of the LC peak
+//** assigns the peak the charge with the highest count in charge map <charge,count>
   void LCElutionPeak::compute_CHRG()
   {
 
@@ -450,6 +476,8 @@ namespace OpenMS
 
     int maxCount = -1;
     multimap<int, int>::iterator C = CHRG_MAP.begin();
+    
+    //** iterate through all <charge,count> entries in CHRG_MAP, find charge with highest count**
     while (C != CHRG_MAP.end())
     {
 
@@ -457,7 +485,7 @@ namespace OpenMS
       {
         cout << (*C).first << ":" << (*C).second << endl;
       }
-
+      
       if (maxCount < (*C).second)
       {
         fCharge = (*C).first;
@@ -508,6 +536,7 @@ namespace OpenMS
 
 ////////////////////////////////////////////////////////////////////////////////
 // print all monositopic peak cluster along the LC profile:
+//** adds all MSPeak.ISOPEAK's values to ConsensusIsotopePattern, delegates to ConsensusIsotopePattern.construct... **
   void LCElutionPeak::createConsensIsotopPattern()
   {
 
@@ -517,13 +546,19 @@ namespace OpenMS
     isotopePattern = new ConsensusIsotopePattern();
 
     multimap<int, MSPeak>::iterator R = intens_signals.begin();
+    
+    //** iterator through all peaks in the elution peak**
     while (R != intens_signals.end())
     {
 
       MSPeak * peak = &(*R).second;
       // map<double, double> isotopeCluster; // unused variable
 
+
+      //** isotopic peaks corresponding to monoisotopic peak **
       vector<CentroidPeak>::iterator p = peak->get_isotopic_peaks_start();
+      
+      //** add isotopic peaks to isotopePattern
       while (p != peak->get_isotopic_peaks_end())
       {
         isotopePattern->addIsotopeTrace((*p).getMass(), (*p).getFittedIntensity());
@@ -533,6 +568,7 @@ namespace OpenMS
       ++R;
     }
 
+    //** use the entered mz/intensity values to synthesize into an isotope pattern **
     // create the pattern:
     isotopePattern->constructConsusPattern();
 
@@ -581,9 +617,11 @@ namespace OpenMS
     return elutionPeakExtraInfo;
   }
 
+//** sets the attributes of the LCElutionPeak **
   void LCElutionPeak::analyzeLCElutionPeak()
   {
 
+    //** if the elution_peak object has more than one signal **
     if (get_nb_ms_peaks() > 1)
     {
 
@@ -591,19 +629,24 @@ namespace OpenMS
 
       // determine the intensity background baseline based on S/N
       // value:
+      //** set signal to noise ratio of elution peak, set signal to noise threshold **
       setSNIntensityThreshold();
 
       // Compute a variety of parameters for the LC elution peak
+      //** integrate elution peak to find apex, start, end
       computeLCElutionPeakParameters();
 
       // define parameters such as chrg, score
+      //** assign charge according to max count in CHRG_MAP **
       compute_CHRG();
 
       // create the consensus pattern:
       createConsensIsotopPattern();
     }
+    //** else there is only one peak **
     else
     {
+      //** no calculation necessary, just use the one peak **
       defineLCElutionPeakParametersFromMSPeak();
     }
   }

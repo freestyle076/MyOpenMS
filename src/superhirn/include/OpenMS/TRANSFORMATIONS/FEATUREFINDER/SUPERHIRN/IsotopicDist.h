@@ -115,12 +115,20 @@ private:
    */
 
 // Returns index in isotopic tables
+  //** finds the row in the GIANT isotopic tables belonging to mass * charge
   inline int IsotopicDist::getIndex(double pMass,   // m/z of monoisotopic peak
                                     int pCharge) // charge
   {
     double diff;
     int idx;
 
+    //** sfMinMass is the min DA value (500) **
+    //** sfMassStep is the increment between DA bins (100) **
+    
+    //** imagine mass of 500, charge of 2 **
+    //** diff = (500 * 2 - 500) / 100 **
+    //**      = 500 / 100 = 5 **
+    //** so pMass * pCharge is actual mass... **
     diff = (pMass * pCharge - sfMinMass) / sfMassStep;
     if (diff < 0)
       idx = 0;

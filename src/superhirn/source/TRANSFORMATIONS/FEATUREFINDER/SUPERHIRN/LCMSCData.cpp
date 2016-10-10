@@ -115,6 +115,7 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // add data into the structure:
+//** add an elution peak with mz to LCMSData **
   void LCMSCData::add_LC_elution_peak(double MZ, LCElutionPeak * in)
   {
     // get the scan apex:

@@ -149,6 +149,7 @@ namespace OpenMS
 
 /////////////////////////////////////////////////
 // construc the consenus pattern:
+//** for each isotope
   void ConsensusIsotopePattern::constructConsusPattern()
   {
 

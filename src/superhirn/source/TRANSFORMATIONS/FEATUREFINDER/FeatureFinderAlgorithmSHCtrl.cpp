@@ -66,6 +66,8 @@ namespace OpenMS
     SuperHirnParameters::instance()->initIsotopeDist_ = false;      // reset this so that the IsotopeDist gets reinitalized
 
     FTPeakDetectController controller;
+    
+    //** 
     controller.startScanParsing(datavec);
 
     std::vector<Feature> thefeatures;

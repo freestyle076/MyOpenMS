@@ -210,17 +210,21 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // get the  full summed up intensity
+//** returns the intensity sum of all elution peaks in the pointed mz_series **
   double ProcessData::getPeakIntensitySum(double in)
   {
-
     double out = 0;
+    
+    //** mz_series in main_data_structure with matching mz key **
     main_iterator F = pMZ_LIST.find(in);
     if (F != pMZ_LIST.end())
     {
 
+      //** iterate through all elution_peaks **
       MZ_series_ITERATOR p = F->second.begin();
       while (p != F->second.end())
       {
+        //** iterate through all MSPeak in elution peak **
         multimap<int, MSPeak>::iterator k = p->begin();
         while (k != p->end())
         {
@@ -305,7 +309,7 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // inputs raw /centroided  data into the object:
-  //** adds a single scan's 
+  //** converts scan data into MSPeak objects, delegates adding data **
   void ProcessData::add_scan_raw_data(int SCAN, double TR, CentroidData * centroidedData)
   {
 
@@ -317,6 +321,10 @@ namespace OpenMS
     centroidedData->get(pCentroidPeaks);
     backgroundController->addPeakMSScan(TR, &pCentroidPeaks);
 
+    //** deisotope the data **
+    //** definition deisotope: To remove complications due to the presence of isotopes in a mass spectrum **
+    
+    //** get monoisotopic traces of each peak group matching empirically tested isotopic patterns **
     dei.go(*centroidedData);
     dei.cleanDeconvPeaks();
 
@@ -334,6 +342,7 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // inputs the centroided / deisotoped data into the object:
+//** adds a single scan's data (PEAK_LIST) to the main data structure **
   void ProcessData::add_scan_raw_data(vector<MSPeak> PEAK_LIST)
   {
 
@@ -354,15 +363,24 @@ namespace OpenMS
       if (filterDeisotopicMSPeak(PEAK))
       {
 
-        //** insert the peak into main data structure **
+        
         // check if this MZ has already been observed:
+        
+        //** look for an MZ in main_data_structure that is close to the current peak **
         main_iterator LCP = check_MZ_occurence(PEAK);
+        
+        //** insert the peak into main data structure **
         if (LCP != get_MZ_LIST_end())
         {
+          //** there exists an entry in main_data_structure that is close enough in mz **
+          //** append the peak to the near enough mz entry **
+          //** modifies the mz entry to incorporate the new peak's mz (weighted average by intensity) **
           insert_observed_mz(LCP, PEAK);
         }
         else
         {
+          //** there doesn't exist a close enough entry... **
+          //** create a new mz entry **
           insert_new_observed_mz(PEAK);
         }
       }
@@ -424,10 +442,12 @@ namespace OpenMS
 
     // create first an elution peak:
     elution_peak tmp_TR;
+    //** multimap<int,MSPEAK> **
     tmp_TR.insert(make_pair(PEAK->get_Scan(), *PEAK));
 
     // now make a vector for the mz:
     MZ_series tmp_MZ;
+    //** vec<multimap<int,MSPEAK>> **
     tmp_MZ.push_back(tmp_TR);
 
     // into main structure:
@@ -451,15 +471,20 @@ namespace OpenMS
 
     ////////////////////////////////////////////////////
     // check if its the same m/z and charge state:
+    
+    //** if the discovered MZ entry has an mz equivalent to peak's mz... **
     if (((*LCP).first == PEAK->get_MZ()))
     {
 
       // find the last elution peak cluster:
+      //** final mmap<scan_IX, MSPeak> "end()" in currently pointed MZ_series "second" **
       MZ_series_ITERATOR Q = (*LCP).second.end();
       Q--;
 
       // check if this peak should be added to the existing
       // last elution peak cluster or start a new one:
+      
+      //** if they
       if (check_elution_peak_belong(Q, PEAK))
       {
 
@@ -516,7 +541,11 @@ namespace OpenMS
       // nb_elements = (double) LCP->second.rbegin()->size();
 
       // calculate the new cluster average mass:
+      
+      //** sum of all intensities in the mz_series at match_mz **
       double peakIntens = getPeakIntensitySum(match_mz);
+      
+      //** new_mz is a weighted average over the "close enough" mz and the peak's MZ **
       double new_mz = peakIntens * match_mz + PEAK->get_MZ() * PEAK->get_intensity();
       new_mz /= (peakIntens + PEAK->get_intensity());
 
@@ -527,6 +556,8 @@ namespace OpenMS
 
       // now replace the value of the old MZ_SERIES with the new m/z value
       // and add the input ms peak:
+      
+      //** change the key in the "close enough" mz entry in main_data_structure to the new weighted average mz **
       MZ_series TMP_SER = LCP->second;
       erase_MZ_LIST_element(LCP);
 
@@ -536,6 +567,8 @@ namespace OpenMS
 
       // check if this peak should be added to the existing
       // last elution peak cluster or start a new one:
+      
+      //** if scan not already claimed and RT difference tolerable insert into existing elution peak **
       if (check_elution_peak_belong(Q, PEAK))
       {
 
@@ -545,6 +578,8 @@ namespace OpenMS
         pMZ_LIST.insert(pair<double, MZ_series>(new_mz, TMP_SER));
 
       }
+      
+      //** else create new elution peak, add to current mz_series **
       else
       {
 
@@ -579,6 +614,9 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // check if a peak with this scan number belong to this elution cluster:
+//** belongs to elution peak if not in scan of elution cluster's last peak **
+//** AND scan is within max inter scan retention time distance **
+
   bool ProcessData::check_elution_peak_belong(MZ_series_ITERATOR P, MSPeak * PEAK)
   {
 
@@ -641,21 +679,27 @@ namespace OpenMS
 
     //////////////////////////////////
     // run through all m/z values:
+    
+    //** iterate through all mz_series in main_data_structure **
     main_iterator P_MZ = get_MZ_LIST_start();
     while (P_MZ != get_MZ_LIST_end())
     {
 
+      //** mz of the current mz_series **
       double this_MZ = 0;
       this_MZ = (*P_MZ).first;
 
       //////////////////////////////////
       // run through all elution peaks
+      
+      //** iterate through all elution_peaks **
       MZ_series_ITERATOR Q_SER = (*P_MZ).second.begin();
       while (Q_SER != (*P_MZ).second.end())
       {
 
         // check if this elution peak
         // is accepted as a really LC-elution peak:
+        //** **
         if (check_elution_peak(Q_SER))
         {
           convert_to_LC_elution_peak(Q_SER, this_MZ);
@@ -673,6 +717,7 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // check if this elution peak is accepted as a really LC-elution peak:
+//** true if the peak has more than required number of members, or has an ms/ms precursor **
   bool ProcessData::check_elution_peak(MZ_series_ITERATOR Q_SER)
   {
 
@@ -694,10 +739,14 @@ namespace OpenMS
      */
 
     // check if contains more or same than x element:
+    
+    //** MINIMUM NUMBER OF PEAKS PER ELUTION PEAK (config param)**
     if (int((*Q_SER).size()) >= SuperHirnParameters::instance()->getMinNbClusterMembers())
     {
       return true;
     }
+    
+    //** if elution peak has less than required number of members, check ms/ms precursor presence **
     else
     {
 
@@ -705,6 +754,8 @@ namespace OpenMS
       // check if the peak contains any MS/MS peak which was
       // selected as MS/MS precursor:
       multimap<int, MSPeak>::iterator P = (*Q_SER).begin();
+      
+      //
       while (P != (*Q_SER).end())
       {
 
@@ -723,6 +774,7 @@ namespace OpenMS
 
 ///////////////////////////////////////////////////////////////////////////////
 // convert the MZ_series elution peak element into a LC_elution_peak object
+//** delegates to LCElutionPeak.analyzeLCElutionPeak, inserts into LCMSData **
   void ProcessData::convert_to_LC_elution_peak(MZ_series_ITERATOR Q_SER, double this_MZ)
   {
 
@@ -768,6 +820,8 @@ namespace OpenMS
 ///////////////////////////////////////////////////////////////////////////////
 // checks if a mz value has already been seen,
 // also look for very close ones and cluster them
+//** looks for an entry in main_data_structure that has an MZ value within the prescribed tolerance **
+//** returns iterator_end_thingy if none found **
   ProcessData::main_iterator ProcessData::check_MZ_occurence(MSPeak * PEAK)
   {
 
@@ -787,10 +841,15 @@ namespace OpenMS
     double targetMZ = PEAK->get_MZ();
     int targetScan = PEAK->get_Scan();
 
+    //** get iterator pointing to first KV pair w/ K (MZ) >= targetMZ **
     main_iterator P = get_MZ_lower_bound(targetMZ);
+    
+    //** list of candidate mz key values from main data structure **
     vector<main_iterator> CandidateList;
 
     // go decreasing order
+    //** iterate backwards from lower bound, looking for an mz value close enough to the input peak **
+    //** close enough is defined by init configuration **
     main_iterator down = P;
     if (P != get_MZ_LIST_start())
     {
@@ -812,10 +871,11 @@ namespace OpenMS
     }
 
     // go increasing order
+    //** iterate forwards from lower bound, looking for an mz value close enough to the input peak **
+    //** close enough is defined by init configuration **
     main_iterator up = P;
     while (up != get_MZ_LIST_end())
     {
-
       int check = compareIteratorToPeak(PEAK, up);
       if (check == 1)
       {
@@ -834,6 +894,9 @@ namespace OpenMS
     // now -> find the best one according o
     // a: closest in m/z
 
+
+    //** collect the candidate whose MZ value is closest to the input peak **
+    
     if (CandidateList.empty())
     {
       // if its not found at all:

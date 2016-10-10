@@ -125,22 +125,24 @@ namespace OpenMS
       Map it = datavec.at(i);
 
       //** WARNING: They use TR instead of RT **
+      //** perhaps TR is RT divided by 60? **
 
+      //** skip if TR value is not within prescribed bounds **
       dataProcessor->setMaxScanDistance(0);
       if ((it.first >= SuperHirnParameters::instance()->getMinTR()) &&
           (it.first <= SuperHirnParameters::instance()->getMaxTR()))
       {
+        //** store TR in map keyed by its index **
         SuperHirnParameters::instance()->getScanTRIndex()->insert(std::pair<int, float>(i, (float) it.first));
 
         // centroid it:
-        //** centroid the raw data **
+        //** create centroid data object (doesn't actually centroid data) **
         CentroidData cd(SuperHirnParameters::instance()->getCentroidWindowWidth(), it.second, it.first,
                         SuperHirnParameters::instance()->centroidDataModus());
 
         //  store it:
-        //** store the centroided data with its index and rt/60 values** 
+        //** store the centroided data with its index and TR values ** 
         dataProcessor->add_scan_raw_data(i, it.first, &cd);
-
       }
     }
 
@@ -203,6 +205,7 @@ namespace OpenMS
     //std::cout << "mzListSize: " << mzListSize << "\n";
 
     // extract LC elution features on the MS1 level:
+    //** **
     rawData->extract_elution_peaks();
 
     // get the new structure with the LC features:
@@ -211,7 +214,7 @@ namespace OpenMS
     // iterator over the extracted features, convert
     vector<LCElutionPeak *> PEAKS = currentData->get_ALL_peak();
     // show program status:
-    printf("\t* Processing of %d MS1 level features...\n", (int) PEAKS.size());
+    //printf("\t* Processing of %d MS1 level features...\n", (int) PEAKS.size());
 
     vector<LCElutionPeak *>::iterator P = PEAKS.begin();
     while (P != PEAKS.end())

@@ -737,6 +737,9 @@ namespace OpenMS
 
 // Iterates over an list of CentroidPeak objects and finds those ones that match a isotopic m/z value. It also calculates the 'best'
 // match of a isotopic pattern to these peaks.
+//** find peaks in the peak group that match empirically tested mass and intensity signals of mass bins **
+//** the number of peaks is likewise empirically tested **
+//** a match score is calculated. greater than 1 returns true. **
   bool IsotopicDist::getMatchingPeaks(list<CentroidPeak>::iterator pMono,   // potential monoisotopic peak
                                       list<CentroidPeak>::iterator pEnd, // end of peak group
                                       int pCharge, // charge of the isotopic pattern
@@ -753,9 +756,14 @@ namespace OpenMS
     list<double> alpha_values;
     list<double>::iterator avi;
 
+    //** mass of current peak **
     mono = pMono->getMass();
+    
+    //** tolerance of something **
     tol = SuperHirnParameters::instance()->getMassTolPpm() * mono / 1.0e6
           + SuperHirnParameters::instance()->getMassTolDa();
+    
+    //** copy input iterator as not to modify it **
     piter = pMono;
     mono_alpha = 0.0;
 
@@ -786,10 +794,13 @@ namespace OpenMS
     */
 
     double intens = pMono->getIntensity();
+    
+    //** theoretical intensity value (50th percentile) **
     double theoIntensMono = sfIsoDist50Local[0];
     pAlpha = (intens + pTheta) / theoIntensMono;
 
     // Markus-Fix, applied 2011-05-06
+    //** max number of isotopes in the group (minimum of 6) **
     int maxNbIsotopes = sfNrIsotopes[idx];     // number of isotopes used for quantification
     int maxMaxNbIsotopes = (maxNbIsotopes > 6) ? maxNbIsotopes : 6;     // number of isotopes to be removed
 
@@ -804,31 +815,45 @@ namespace OpenMS
      }
      */
 
+    //** look for prescribed number of isotopes **
     for (i = 0; i < maxMaxNbIsotopes; i++) // find matching isotopes
     {
       double m_low, m_high, max_alpha, theta, dm,dist_min;
-      theta = (sfIsoDist50Local[i] < SuperHirnParameters::instance()->getDetectableIsotopeFactor()) ? pTheta : 0.0;       // this only requires intense isotpic peaks to match exp. peaks
+      // this only requires intense isotpic peaks to match exp. peaks
+      theta = (sfIsoDist50Local[i] < SuperHirnParameters::instance()->getDetectableIsotopeFactor()) ? pTheta : 0.0;       
 
       //m_low = mono + sfIsoDist10Local[i]/pCharge - tol;
       //m_high = mono + sfIsoDist90Local[i]/pCharge + tol;
+      //** mass bounds **
+      //** low is the 10th percentile of the masses within the same bin as the current peak, with tolerance**
       m_low = mono + sfIsoMass10[idx][i] / pCharge - tol;
+    
+      //** ditto, but 90th percentile **
       m_high = mono + sfIsoMass90[idx][i] / pCharge + tol;
+    
 
       matched = false;
       dist_min = 100.0;
       dm = 1.0;
       max_alpha = 0.0;
+      
+      //** iterate through all peaks from start peak to end of group, looking for isotope **
       for (; piter != pEnd; ++piter)
       {
+        //** mass of current peak **
         m = piter->getMass();
 
+        //** if the current peak's mass is in the mass bounds **
         if (m >= m_low && m <= m_high) // matching mass
         {
+        
           dm = abs(piter->getMass() - mono - sfIsoMass50[idx][i] / pCharge);
           alpha = (piter->getIntensity() + theta) / sfIsoDist50Local[i];
+          
           if (i > 0)  // second and higher isotop
           {
-            dist = abs((alpha - mono_alpha) / mono_alpha) + 10.0 * dm / tol;             // score to evaluate distance between expected and measured values
+            // score to evaluate distance between expected and measured values
+            dist = abs((alpha - mono_alpha) / mono_alpha) + 10.0 * dm / tol;             
             if (dist < dist_min) // take minimum distance within same isotop mass range
             {
               max_alpha = alpha;
@@ -934,6 +959,7 @@ namespace OpenMS
   }
 
 // Subtracts fitted isotopic distribution from the spectrum and defines monoisotopic peak
+//** sets attributes of monoisotopic peak (mono) according to charge, alpha score, and matched peaks **
   void IsotopicDist::subtractMatchingPeaks(list<list<CentroidPeak>::iterator> & pMatchedPeaks,  // pointers to matching peaks
                                            int pCharge, // charge
                                            double pAlpha, // fit constant
@@ -945,12 +971,17 @@ namespace OpenMS
     double mono, h_tot, dmC13;
     vector<CentroidPeak> isotopicDist;
 
+    //** mass of the monoisotopic peak **
     mono = (*pMatchedPeaks.begin())->getMass();
+    
+    //** row of monoisotopic peak in empirical isotopic tables **
     idx = getIndex(mono, pCharge);
 
     h_tot = 0.0;
     cnt = 0;
     dmC13 = 0.0;
+    
+    //** iterate through peaks that matched the empiricaly isotopic patterns **
     for (mpi = pMatchedPeaks.begin(); mpi != pMatchedPeaks.end(); ++mpi) // go through list of all matched peaks
     {
       int i = (*mpi)->getIsotopIdx();

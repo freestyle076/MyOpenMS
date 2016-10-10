@@ -161,6 +161,7 @@ namespace OpenMS
     vector<double> intens;
     list<CentroidPeak>::iterator pi;
 
+    // ** collect all intensities **
     for (pi = fCentroidPeaks.begin(); pi != fCentroidPeaks.end(); ++pi)
     {
       intens.push_back(pi->getIntensity());
@@ -232,6 +233,7 @@ namespace OpenMS
     {
       ++pi;
     }
+    
     for (; pi != fCentroidPeaks.end(); ++pi, ++prev)
     {
       double eps;

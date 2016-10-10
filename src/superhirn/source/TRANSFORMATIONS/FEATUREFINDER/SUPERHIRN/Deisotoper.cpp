@@ -108,19 +108,30 @@ namespace OpenMS
   }
 
 // Takes centroide values and deisotopes them
+//** reads through the spectrum peak group by peak group (close enough peaks), **
+//** looking for a set of peaks that match empirically tested isotopic patterns, **
+//** The matching set of peaks is then stripped down to the monoisotopic
   void Deisotoper::go(CentroidData & pCentroidData)  // Data objects containing centroid values
   {
     int cnt, charge;
     double alpha;
     bool matched;
+    
+    //** pointer to peaks in pCentroidData **
     list<CentroidPeak> centroidPeaks;
+    
+    //** group start, group end, and group iterator **
     list<CentroidPeak>::iterator start, end, pi;
+    
+    // ** what is this?? **
     list<list<CentroidPeak>::iterator> matchedPeaks;
 
     pCentroidData.get(centroidPeaks);
 
+    //** hello hardcoding (config param not shown to user)**
     fMinPeakGroupSize = 2;
 
+    //** set the minimum intensity (depending on config params)**
     if (SuperHirnParameters::instance()->getMinIntensity() < SuperHirnParameters::instance()->getIntensityFloor())
     {
       pCentroidData.setNoise(30.0);       // set noise level at 30 prcentile
@@ -131,17 +142,26 @@ namespace OpenMS
       fTheta = SuperHirnParameters::instance()->getMinIntensity();
     }
 
+    //** sets peak iterator to beginning of peak vector **
     pCentroidData.resetPeakGroupIter();
+    
+    //** getNextPeakGroup returns a run of peaks (by bounding iterators start and end) **
+    //** with max separation 1 + epsilon (config parameter) **
     while (pCentroidData.getNextPeakGroup(start, end)) // isotopic patterns are withing the same peak group
     {
+      //** count the number of peaks in the peak group (in the iterator way!) **
       for (cnt = 0, pi = start; pi != end; ++pi, ++cnt)
       {
       }
 
+      //** ignore single peaks (fMinPeakGroupSize = 2) **
       if (cnt >= fMinPeakGroupSize) // Discard peak groups with only one peak
       {
+          
+        //** iterate through peaks in peak group (pi) looking for monoisotopic peak (if any)**
         for (pi = start; pi != end; ++pi, --cnt)
         {
+          //** ignore peaks below the minimum intensity **
           if (pi->getIntensity() < fTheta || cnt < fMinPeakGroupSize)
             continue;             // skip small peaks
           /*
@@ -151,11 +171,15 @@ namespace OpenMS
            }
            }
            */
-
+           
+          // ** iterate through all possible charge states (backwards) (config params) **
           for (charge = SuperHirnParameters::instance()->getMaxFeatureChrg(); charge >= SuperHirnParameters::instance()->getMinFeatureChrg(); --charge)
           {
-
-            matched = IsotopicDist::getMatchingPeaks(pi, end, charge, alpha, fTheta, matchedPeaks);             // get peak that match isotopic pattern of charge
+            
+            // get peak that match isotopic pattern of charge
+            //** returns a set of peaks that match empirically tested mass/intensity readings **
+            //** within the peak group from current peak to end of group **
+            matched = IsotopicDist::getMatchingPeaks(pi, end, charge, alpha, fTheta, matchedPeaks);  
             if (matched && pi->getIntensity() >= fTheta) // subtract isotopic match from peaks if match is significant
             {
               /*
@@ -165,13 +189,15 @@ namespace OpenMS
                }
                }
                */
-
+    
+              //** current peak checked out as monoisotopic peak, convert to deconvpeak **
               DeconvPeak mono(pi->getMass(), 0.0, charge, 0, 0.0, 0.0);
               if (!pi->getExtraPeakInfo().empty())
               {
                 mono.setExtraPeakInfo(pi->getExtraPeakInfo());
               }
 
+              //** calculate attributes of monoisotopic peak from matched peaks **
               IsotopicDist::subtractMatchingPeaks(matchedPeaks, charge, alpha, mono);
               fDeconvPeaks.push_back(mono);
 
@@ -191,10 +217,13 @@ namespace OpenMS
   }
 
 // removes spooky or very small monoisotopic peaks
+//** removes monoisotopic peaks that are under half the maximum intensity of their "cluster" **
+//** seems quite arbitrary **
   void Deisotoper::cleanDeconvPeaks()
   {
     list<DeconvPeak>::iterator pi, beg, end, most_intense;
 
+    //** iterate through monoisotopic peaks as clusters (note how pi is manipulated heavily inside loop **
     for (pi = fDeconvPeaks.begin(); pi != fDeconvPeaks.end(); ++pi)
     {
       double tol, mass;
@@ -204,6 +233,8 @@ namespace OpenMS
       tol = SuperHirnParameters::instance()->getMassTolPpm() * mass / 1.0e6
             + SuperHirnParameters::instance()->getMassTolDa();
       ++pi;
+      
+      //** iterate through following peaks within tolerated range (cluster), finding most intense peak **
       for (; pi != fDeconvPeaks.end(); ++pi) // cluster peaks and define max intensity within cluster
       {
         if (pi->getMass() > mass + 2.0 * tol)
@@ -218,6 +249,7 @@ namespace OpenMS
       }
       end = pi;
 
+      //** iterate through clustered peaks, eliminating those less than half the intensity of the max intensity cluster **
       for (pi = beg; pi != fDeconvPeaks.end() && pi != end; ++pi) // remove all 'very' small peak within cluster
       { // cout << "remove: " << pi->getMass() << " " << pi->getIntensity() << " " << pi->getCharge() << " | " << most_intense->getMass() << " " << most_intense->getIntensity() << endl;
         if (most_intense->getIntensity() > 2.0 * pi->getIntensity())

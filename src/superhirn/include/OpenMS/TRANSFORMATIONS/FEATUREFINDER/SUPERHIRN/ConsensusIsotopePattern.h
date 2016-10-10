@@ -69,6 +69,7 @@ private:
 
     // stores the detected patterns by retention time
     std::map<double, std::pair<std::vector<double>, std::vector<double> > > rawIsotopes_;
+    
 
     ////////////////////////////////////////////////
     // declaration of the public members:
