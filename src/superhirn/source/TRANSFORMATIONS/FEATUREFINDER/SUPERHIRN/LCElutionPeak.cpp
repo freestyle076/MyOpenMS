@@ -97,6 +97,7 @@ namespace OpenMS
 
 ////////////////////////////////////////////////
 // constructor for the object LCElutionPeak:
+  //** data is an elution_peak **
   LCElutionPeak::LCElutionPeak(MZ_series_ITERATOR data, double MZ)
   {
 
@@ -545,6 +546,7 @@ namespace OpenMS
     // constructe a consensus patterns:
     isotopePattern = new ConsensusIsotopePattern();
 
+    //** iterator through elution_peak gives MSPeaks **
     multimap<int, MSPeak>::iterator R = intens_signals.begin();
     
     //** iterator through all peaks in the elution peak**
@@ -554,8 +556,7 @@ namespace OpenMS
       MSPeak * peak = &(*R).second;
       // map<double, double> isotopeCluster; // unused variable
 
-
-      //** isotopic peaks corresponding to monoisotopic peak **
+      //** isotopic peaks corresponding to monoisotopic (leftmost) MSpeak **
       vector<CentroidPeak>::iterator p = peak->get_isotopic_peaks_start();
       
       //** add isotopic peaks to isotopePattern
@@ -564,7 +565,7 @@ namespace OpenMS
         isotopePattern->addIsotopeTrace((*p).getMass(), (*p).getFittedIntensity());
         ++p;
       }
-
+  
       ++R;
     }
 

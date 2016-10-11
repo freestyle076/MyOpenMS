@@ -55,7 +55,7 @@ namespace OpenMS
 {
 
   class SUPERHIRN_DLLAPI ConsensusIsotopePattern
-  {
+  {ß
 
     ////////////////////////////////////////////////
     // declaration of the private members:
@@ -68,6 +68,7 @@ private:
     std::vector<double> intensIsotopesStDev_;
 
     // stores the detected patterns by retention time
+    //** wrong! stores mz as the key **
     std::map<double, std::pair<std::vector<double>, std::vector<double> > > rawIsotopes_;
     
 

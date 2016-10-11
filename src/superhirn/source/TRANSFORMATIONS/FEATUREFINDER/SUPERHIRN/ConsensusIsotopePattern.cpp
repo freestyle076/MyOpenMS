@@ -110,18 +110,23 @@ namespace OpenMS
   void ConsensusIsotopePattern::addIsotopeTrace(double mz, double intens)
   {
 
+    //** find first entry with mz greater than or equal mz **
     map<double, pair<vector<double>, vector<double> > >::iterator F = rawIsotopes_.lower_bound(mz);
     bool match = false;
+
+    //** if a lower bound was found **
     if (F != rawIsotopes_.end())
     {
 
       // compute the delta:
+      //** if lower_bound within tolerated distance insert mz and intens at lower_bound **
       if (SuperHirnUtil::compareMassValuesAtPPMLevel(mz, (*F).first, SuperHirnParameters::instance()->getMzTolPpm()))
       {
         (*F).second.first.push_back(mz);
         (*F).second.second.push_back(mz);
         match = true;
       }
+      //** else the lower_bound is not close enough, if not at try inserting at previous entry **
       else if (F != rawIsotopes_.begin())
       {
         --F;
@@ -136,6 +141,7 @@ namespace OpenMS
 
     }
 
+    //** no entries are found close enough to input mz, create new entry **
     if (!match)
     {
       vector<double> mzTmp;
@@ -149,7 +155,7 @@ namespace OpenMS
 
 /////////////////////////////////////////////////
 // construc the consenus pattern:
-//** for each isotope
+//** condense each mz entry in rawIsotopes_ **
   void ConsensusIsotopePattern::constructConsusPattern()
   {
 
@@ -203,14 +209,19 @@ namespace OpenMS
 
 //////////////////////////////////////////////////
 // condens the pattern, make averge peaks from the traces:
+  //** computes average and stdev for mz and intensity vectores **
+  //** input: mz and intensity values for an mz entry in rawIsotopes_ **
   void ConsensusIsotopePattern::condensIsotopePattern(pair<vector<double>, vector<double> > * in)
   {
 
     // mz
+    //** mz average and stdev **
     pair<double, double> mz = simple_math_AVERAGE_and_STDEV(&(in->first));
     // intens:
+    //** intensity average and stdev **
     pair<double, double> intens = simple_math_AVERAGE_and_STDEV(&(in->second));
 
+    //** store in consensus isotope pattern **
     isotopesTrace_.insert(make_pair(mz.first, intens.first));
     mzIsotopesStDev_.push_back(mz.second);
     intensIsotopesStDev_.push_back(intens.second);

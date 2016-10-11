@@ -206,17 +206,22 @@ namespace OpenMS
     //std::cout << "mzListSize: " << mzListSize << "\n";
 
     // extract LC elution features on the MS1 level:
-    //** **
+    //** Convert main data structure into LCMSCData **
+    //** very involved, turns each valid elution_peak into LCElutionPeak, **
+    //** which synthesizes elution_peak data into an ISOTOPIC PATTERN **
+    //** then stuffs it into LCMSCData's MS_LIST member **
     rawData->extract_elution_peaks();
 
     // get the new structure with the LC features:
     LCMSCData * currentData = rawData->getProcessedData();
 
     // iterator over the extracted features, convert
+    //** returns all of the LCElutionPeaks over all MZ vectors **
     vector<LCElutionPeak *> PEAKS = currentData->get_ALL_peak();
     // show program status:
     //printf("\t* Processing of %d MS1 level features...\n", (int) PEAKS.size());
 
+    //** iterate through each LCElutionPeak, add to  **
     vector<LCElutionPeak *>::iterator P = PEAKS.begin();
     while (P != PEAKS.end())
     {
@@ -302,6 +307,7 @@ namespace OpenMS
     int peak_start = PEAK->get_start_scan();
     int peak_end = PEAK->get_end_scan();
 
+    // (config param)
     if ((apex_TR <= SuperHirnParameters::instance()->getMaxTR())
        && (apex_TR >= SuperHirnParameters::instance()->getMinTR()))
     {
@@ -334,6 +340,7 @@ namespace OpenMS
 
       // function to add the elution profile to the feature:
       // (if turned on)
+      //** create feature elution profile (config param) (essentially LCElutionProfile**
       if (SuperHirnParameters::instance()->createFeatureElutionProfiles())
       {
         addLCelutionProfile(TMP, PEAK);
@@ -379,6 +386,7 @@ namespace OpenMS
 
 ////////////////////////////////////////////////////////
 // function to add the elution profile to the feature:
+  //** adds monoisotopic peak summary info to SHFeature **
   void FTPeakDetectController::addLCelutionProfile(SHFeature * inF, LCElutionPeak * PEAK)
   {
 

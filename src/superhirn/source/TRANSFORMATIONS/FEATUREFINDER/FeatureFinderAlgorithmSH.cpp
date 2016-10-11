@@ -219,9 +219,11 @@ namespace OpenMS
     }
 
     // apply the SuperHirn FeatureFinder algorithm
-    //** the rest of the algorithm is delegated to FeatureFinderAlgorithmSHCtrl
+    //** the rest of the algorithm is delegated to FeatureFinderAlgorithmSHCtrl **
     FeatureFinderAlgorithmSHCtrl ctrl;
     ctrl.initParams(this->param_);
+
+    //** find those features!!! **
     std::vector<Feature> thefeatures = ctrl.extractPeaks(datavec);
 
     for (unsigned int i = 0; i < thefeatures.size(); ++i)
