@@ -699,7 +699,7 @@ namespace OpenMS
 
         // check if this elution peak
         // is accepted as a really LC-elution peak:
-        //** **
+        //** minimum number of MSPeak threshold **
         if (check_elution_peak(Q_SER))
         {
           convert_to_LC_elution_peak(Q_SER, this_MZ);

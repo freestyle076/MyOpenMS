@@ -72,8 +72,9 @@ namespace OpenMS
 
     std::vector<Feature> thefeatures;
 
+    //**
     std::vector<SHFeature>::iterator p = controller.getLCMS()->get_feature_list_begin();
-    //** 
+    //** convert all SHFeatures to OpenMS Feature **
     while (p != controller.getLCMS()->get_feature_list_end())
     {
 
@@ -86,6 +87,8 @@ namespace OpenMS
       f.setCharge(charge);
 
       double rt = (*p).get_retention_time();
+      
+      //** important!!! they multiply back by 60 **
       rt *= 60.0;       // convert back
       f.setRT(rt);
 
