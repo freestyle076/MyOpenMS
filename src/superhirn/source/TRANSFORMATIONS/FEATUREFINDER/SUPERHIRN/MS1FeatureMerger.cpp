@@ -95,24 +95,30 @@ namespace OpenMS
 
     printf("\t\t -- merging features in LC-MS %s: ", lcmsMap->get_spec_name().c_str());
 
+    //** number of features before merging **
     int before = lcmsMap->get_nb_features();
 
     // iterative approach to merge features:
+    //** could've done a do while... **
     unsigned int startNbFeatures = -1;
     while (startNbFeatures != lcmsMap->get_nb_features())
     {
-
+      
       startNbFeatures = lcmsMap->get_nb_features();
-
+    
       // create mz feature clusters
+      //** place each feature in an mz grouping **
       createMZFeatureClusters();
 
       // process the mz clusters
       map<double, vector<SHFeature *> >::iterator M = mzClusters.begin();
+      
+      //** iterate through all feature clusters **
       while (M != mzClusters.end())
       {
         if (M->second.size() > 1)
         {
+            
           processMZFeatureVector(&(M->second));
         }
         ++M;
@@ -142,19 +148,24 @@ namespace OpenMS
   {
 
     vector<SHFeature>::iterator I = lcmsMap->get_feature_list_begin();
+    //** iterate through all features **
     while (I != lcmsMap->get_feature_list_end())
     {
+      //** why... **
       SHFeature * fea = &(*I);
 
+      //** find first entry in mzClusters with mz greater than or equal to features mz **
       map<double, vector<SHFeature *> >::iterator F = mzClusters.lower_bound(fea->get_MZ());
-
+      
+      //** place the feature in the mz cluster that is near enough (in terms of mz), **
+      //** otherwise create new cluster **
       if (mzClusters.empty())
       {
         vector<SHFeature *> tmp;
         tmp.push_back(fea);
         mzClusters.insert(make_pair(fea->get_MZ(), tmp));
-
       }
+      
       else if (F == mzClusters.begin())
       {
 
@@ -260,11 +271,15 @@ namespace OpenMS
     sort(mapF->begin(), mapF->end(), OPERATOR_FEATURE_TR());
 
     // go through the vector to find to be merged features:
+    //** iterate until no changes occur **
     while (length != mapF->size())
     {
 
+      
       length = (unsigned int) mapF->size();
       vector<SHFeature *>::iterator SEARCHER = mapF->begin();
+      
+      // iterate through features in feature cluster **
       while (SEARCHER != mapF->end())
       {
 

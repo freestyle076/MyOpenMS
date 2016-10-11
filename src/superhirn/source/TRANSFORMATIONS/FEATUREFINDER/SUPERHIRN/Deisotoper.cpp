@@ -109,8 +109,7 @@ namespace OpenMS
 
 // Takes centroide values and deisotopes them
 //** reads through the spectrum peak group by peak group (close enough peaks), **
-//** looking for a set of peaks that match empirically tested isotopic patterns, **
-//** The matching set of peaks is then stripped down to the monoisotopic
+//** looking for a set of peaks that match empirically tested isotopic patterns **
   void Deisotoper::go(CentroidData & pCentroidData)  // Data objects containing centroid values
   {
     int cnt, charge;
@@ -128,10 +127,10 @@ namespace OpenMS
 
     pCentroidData.get(centroidPeaks);
 
-    //** hello hardcoding (config param not shown to user)**
+    //** hello hardcoding (config param not shown to user) **
     fMinPeakGroupSize = 2;
 
-    //** set the minimum intensity (depending on config params)**
+    //** set the minimum intensity (depending on config params) **
     if (SuperHirnParameters::instance()->getMinIntensity() < SuperHirnParameters::instance()->getIntensityFloor())
     {
       pCentroidData.setNoise(30.0);       // set noise level at 30 prcentile
@@ -197,7 +196,7 @@ namespace OpenMS
                 mono.setExtraPeakInfo(pi->getExtraPeakInfo());
               }
 
-              //** calculate attributes of monoisotopic peak from matched peaks **
+              //** calculate attributes of monoisotopic peak from matched peaks, collects matched peaks **
               IsotopicDist::subtractMatchingPeaks(matchedPeaks, charge, alpha, mono);
               fDeconvPeaks.push_back(mono);
 

@@ -136,7 +136,7 @@ namespace OpenMS
         SuperHirnParameters::instance()->getScanTRIndex()->insert(std::pair<int, float>(i, (float) it.first));
 
         // centroid it:
-        //** create centroid data object (doesn't actually centroid data) **
+        //** create centroid data object **
         CentroidData cd(SuperHirnParameters::instance()->getCentroidWindowWidth(), it.second, it.first,
                         SuperHirnParameters::instance()->centroidDataModus());
 
@@ -155,6 +155,7 @@ namespace OpenMS
 
     lcms_->order_by_mass();
 
+    //** yeah I need to figure this one out **
     if (SuperHirnParameters::instance()->ms1FeatureClustering())
     {
       MS1FeatureMerger * merg = new MS1FeatureMerger(lcms_);
